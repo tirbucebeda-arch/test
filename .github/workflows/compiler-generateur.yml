@@ -1,8 +1,7 @@
-name: Compiler les APK sécurisés
+name: Compiler les APK sans code personnel
 on:
   push:
     paths:
-      - 'generator-app/**'
       - '.github/workflows/compiler-generateur.yml'
   workflow_dispatch:
 permissions:
@@ -15,12 +14,12 @@ jobs:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - uses: actions/checkout@v4
-      - name: Télécharger le projet étudiant autorisé
+      - name: Télécharger les deux projets autorisés
         run: |
-          curl -L --fail --retry 3 -o projet.zip "https://bibliotheque-applications-tirbuce.tirbucebeda515074.chatgpt.site/Projet-Android-Revision-DEB.zip"
-          unzip -q projet.zip
-          mkdir -p generator-app/app/src/main/res/drawable
-          cp android-app/app/src/main/assets/www/icone-l3-512.png generator-app/app/src/main/res/drawable/app_icon.png
+          curl -L --fail --retry 3 -o projet-etudiant.zip "https://bibliotheque-applications-tirbuce.tirbucebeda515074.chatgpt.site/Projet-Android-Revision-DEB.zip"
+          unzip -q projet-etudiant.zip
+          curl -L --fail --retry 3 -o projet-generateur.zip "https://bibliotheque-applications-tirbuce.tirbucebeda515074.chatgpt.site/Projet-Android-Generateur-Code.zip"
+          unzip -q projet-generateur.zip
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -41,25 +40,28 @@ jobs:
           const pub=publicKey.export({format:'jwk'}), priv=privateKey.export({format:'jwk'});
           priv.ext=true; priv.key_ops=['sign']; pub.ext=true; pub.key_ops=['verify'];
           const gp='generator-app/app/src/main/assets/www/index.html';
-          fs.writeFileSync(gp,fs.readFileSync(gp,'utf8').replace('__PRIVATE_JWK__',JSON.stringify(priv)));
+          const g=fs.readFileSync(gp,'utf8');
+          if (!g.includes('__PRIVATE_JWK__')) throw Error('Private key placeholder missing');
+          fs.writeFileSync(gp,g.replace('__PRIVATE_JWK__',JSON.stringify(priv)));
           const sp='android-app/app/src/main/assets/www/device-activation.js';
           let s=fs.readFileSync(sp,'utf8');
-          s=s.replace(/const PUBLIC_KEY = \{[\s\S]*?\n  \};/,'const PUBLIC_KEY = '+JSON.stringify(pub)+';');
-          fs.writeFileSync(sp,s);
+          const pat=/const PUBLIC_KEY = \{[\s\S]*?\n  \};/;
+          if (!pat.test(s)) throw Error('Public key placeholder missing');
+          fs.writeFileSync(sp,s.replace(pat,'const PUBLIC_KEY = '+JSON.stringify(pub)+';'));
           NODE
       - name: Compiler le générateur
         working-directory: generator-app
         run: gradle assembleDebug --no-daemon
-      - name: Compiler l'application étudiant
+      - name: Compiler l'application étudiante
         working-directory: android-app
         run: gradle assembleDebug --no-daemon
-      - name: Protéger le générateur
+      - name: Chiffrer le générateur pour livraison privée
         run: |
           mkdir -p livrables
-          cp android-app/app/build/outputs/apk/debug/app-debug.apk livrables/Revision-DEB-Android.apk
-          openssl cms -encrypt -binary -aes-256-cbc -in generator-app/app/build/outputs/apk/debug/app-debug.apk -outform DER -out livrables/REV-DE.apk.p7m generator-app/encrypt-cert.pem
+          cp android-app/app/build/outputs/apk/debug/app-debug.apk livrables/Revision-DE-Android.apk
+          openssl cms -encrypt -binary -aes-256-cbc -in generator-app/app/build/outputs/apk/debug/app-debug.apk -outform DER -out livrables/Generateur-de-Code.apk.p7m generator-app/encrypt-cert.pem
       - uses: actions/upload-artifact@v4
         with:
-          name: apks-proteges
+          name: apks-sans-code-personnel
           path: livrables/*
           retention-days: 1
