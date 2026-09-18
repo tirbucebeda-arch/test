@@ -15,6 +15,10 @@ jobs:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - uses: actions/checkout@v4
+      - name: Télécharger le projet étudiant autorisé
+        run: |
+          curl -L --fail --retry 3 -o projet.zip "https://bibliotheque-applications-tirbuce.tirbucebeda515074.chatgpt.site/Projet-Android-Revision-DEB.zip"
+          unzip -q projet.zip
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
