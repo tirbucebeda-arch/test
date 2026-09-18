@@ -19,7 +19,7 @@ jobs:
           curl -L --fail --retry 3 -o projet-etudiant.zip "https://bibliotheque-applications-tirbuce.tirbucebeda515074.chatgpt.site/Projet-Android-Revision-DEB.zip"
           unzip -q projet-etudiant.zip
           curl -L --fail --retry 3 -o projet-generateur.zip "https://bibliotheque-applications-tirbuce.tirbucebeda515074.chatgpt.site/Projet-Android-Generateur-Code.zip"
-          unzip -q projet-generateur.zip
+          unzip -oq projet-generateur.zip
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
