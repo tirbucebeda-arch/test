@@ -1,0 +1,39 @@
+name: Compiler APK Revision DEB
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Télécharger le projet Android
+        run: |
+          curl -L --fail --retry 3 -o projet.zip "https://bibliotheque-applications-tirbuce.tirbucebeda515074.chatgpt.site/Projet-Android-Revision-DEB.zip"
+          unzip -q projet.zip
+      - name: Installer Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Installer Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Installer Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Compiler l'APK
+        working-directory: android-app
+        run: gradle assembleDebug --no-daemon
+      - name: Préparer l'APK
+        run: cp android-app/app/build/outputs/apk/debug/app-debug.apk Revision-DEB-Android.apk
+      - name: Archiver l'APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Revision-DEB-Android
+          path: Revision-DEB-Android.apk
