@@ -15,7 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Préparer le projet Android corrigé
-        run: unzip -oq source-android-fixed.zip
+        run: |
+          cat source-parts/part-* > source-android-verified.zip
+          echo 'd104b7bfaf9435b057bfd4d8bac7283d3e4d203c24c6fc1f03e1863bb0d1779b  source-android-verified.zip' | sha256sum -c -
+          unzip -oq source-android-verified.zip
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
