@@ -1,0 +1,59 @@
+name: Compiler les APK sécurisés
+on:
+  push:
+    paths:
+      - 'generator-app/**'
+      - '.github/workflows/compiler-generateur.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Préparer Android SDK
+        run: |
+          SDKMANAGER=/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - name: Créer la paire de clés d'activation
+        run: |
+          node <<'NODE'
+          const fs=require('fs'), crypto=require('crypto');
+          const {publicKey,privateKey}=crypto.generateKeyPairSync('ec',{namedCurve:'prime256v1'});
+          const pub=publicKey.export({format:'jwk'}), priv=privateKey.export({format:'jwk'});
+          priv.ext=true; priv.key_ops=['sign']; pub.ext=true; pub.key_ops=['verify'];
+          const gp='generator-app/app/src/main/assets/www/index.html';
+          fs.writeFileSync(gp,fs.readFileSync(gp,'utf8').replace('__PRIVATE_JWK__',JSON.stringify(priv)));
+          const sp='android-app/app/src/main/assets/www/device-activation.js';
+          let s=fs.readFileSync(sp,'utf8');
+          s=s.replace(/const PUBLIC_KEY = \{[\s\S]*?\n  \};/,'const PUBLIC_KEY = '+JSON.stringify(pub)+';');
+          fs.writeFileSync(sp,s);
+          NODE
+      - name: Compiler le générateur
+        working-directory: generator-app
+        run: gradle assembleDebug --no-daemon
+      - name: Compiler l'application étudiant
+        working-directory: android-app
+        run: gradle assembleDebug --no-daemon
+      - name: Protéger le générateur
+        run: |
+          mkdir -p livrables
+          cp android-app/app/build/outputs/apk/debug/app-debug.apk livrables/Revision-DEB-Android.apk
+          openssl cms -encrypt -binary -aes-256-cbc -in generator-app/app/build/outputs/apk/debug/app-debug.apk -outform DER -out livrables/Generateur-Prive-Activation.apk.p7m generator-app/encrypt-cert.pem
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apks-proteges
+          path: livrables/*
+          retention-days: 1
