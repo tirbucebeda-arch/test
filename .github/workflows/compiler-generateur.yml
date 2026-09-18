@@ -65,3 +65,4 @@ jobs:
           path: livrables/*
           retention-days: 1
 # Recompilation après correction de l'ouverture des exercices
+# Relance avec l’icône du générateur
