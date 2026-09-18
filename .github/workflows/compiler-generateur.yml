@@ -19,6 +19,8 @@ jobs:
         run: |
           curl -L --fail --retry 3 -o projet.zip "https://bibliotheque-applications-tirbuce.tirbucebeda515074.chatgpt.site/Projet-Android-Revision-DEB.zip"
           unzip -q projet.zip
+          mkdir -p generator-app/app/src/main/res/drawable
+          cp android-app/app/src/main/assets/www/icone-l3-512.png generator-app/app/src/main/res/drawable/app_icon.png
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -55,7 +57,7 @@ jobs:
         run: |
           mkdir -p livrables
           cp android-app/app/build/outputs/apk/debug/app-debug.apk livrables/Revision-DEB-Android.apk
-          openssl cms -encrypt -binary -aes-256-cbc -in generator-app/app/build/outputs/apk/debug/app-debug.apk -outform DER -out livrables/Generateur-Prive-Activation.apk.p7m generator-app/encrypt-cert.pem
+          openssl cms -encrypt -binary -aes-256-cbc -in generator-app/app/build/outputs/apk/debug/app-debug.apk -outform DER -out livrables/REV-DE.apk.p7m generator-app/encrypt-cert.pem
       - uses: actions/upload-artifact@v4
         with:
           name: apks-proteges
