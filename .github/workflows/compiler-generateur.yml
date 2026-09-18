@@ -14,12 +14,8 @@ jobs:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - uses: actions/checkout@v4
-      - name: Télécharger les deux projets autorisés
-        run: |
-          curl -L --fail --retry 3 -o projet-etudiant.zip "https://bibliotheque-applications-tirbuce.tirbucebeda515074.chatgpt.site/Projet-Android-Revision-DEB.zip"
-          unzip -q projet-etudiant.zip
-          curl -L --fail --retry 3 -o projet-generateur.zip "https://bibliotheque-applications-tirbuce.tirbucebeda515074.chatgpt.site/Projet-Android-Generateur-Code.zip"
-          unzip -oq projet-generateur.zip
+      - name: Préparer le projet Android corrigé
+        run: unzip -oq source-android-fixed.zip
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
